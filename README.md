@@ -121,6 +121,22 @@ All generated code was reviewed, tested, and understood during development.
 
 ---
 
+## AI Failure Modes & Resilient Architecture
+
+Building reliable production applications on top of non-deterministic LLMs requires treating failure as a first-class citizen. FridgeAI implements a multi-layered defense against common AI failure modes:
+
+| Failure Mode | Root Cause / Risk | How FridgeAI Handles It |
+| :--- | :--- | :--- |
+| **Markdown Fences & Preamble** | LLMs often output ` ```json ` fences or conversational chatter despite instructions. | Regex extraction and JSON block sanitization in [server/generate.js](file:///c:/Users/Asus/Downloads/flam-fridge-recipe/server/generate.js) before parsing. |
+| **Malformed / Truncated JSON** | Model token limits or sudden stream terminations produce syntax errors. | Safe `try/catch` wrapping returning standardized structured error objects with actionable user codes (`MALFORMED_JSON`). |
+| **Schema Inconsistency / Hallucination** | Model omits required fields or outputs unexpected types (e.g., missing steps array). | Client-side schema validator ([client/src/lib/validateResult.js](file:///c:/Users/Asus/Downloads/flam-fridge-recipe/client/src/lib/validateResult.js)) rejects invalid shapes before rendering. |
+| **API Latency & Hanging Requests** | Network congestion or LLM cold starts cause spinners to hang indefinitely. | Dual timeout guards: 30s backend abort controller + 35s hard client fetch timeout ([client/src/lib/api.js](file:///c:/Users/Asus/Downloads/flam-fridge-recipe/client/src/lib/api.js)). |
+| **Rate Limits & Capacity (429 / 503)** | API quotas or high upstream traffic trigger upstream rejections. | Specific user-facing telemetry and actionable recovery tips instead of blank screens. |
+| **Offline / Network Disconnection** | User is in a kitchen with poor connectivity or offline. | Dynamic **Offline Quick-Picks** fallback grid loaded with instant zero-waste recipes. |
+| **Race Conditions (Stale Responses)** | User rapidly fires multiple requests or edits ingredients mid-flight. | Request ID / active query tracking discards out-of-order responses. |
+
+---
+
 ## Known Limitations
 
 - **Markdown Wrapping**: Gemini occasionally wraps JSON responses in markdown code fences despite strict prompting instructions. Robust regex strip logic handles most cases, but extreme edge cases trigger the friendly `MALFORMED_JSON` error state.
