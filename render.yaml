@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: fridgeai-api
+    env: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-1.5-flash
+      - key: ALLOWED_ORIGINS
+        value: "*"
